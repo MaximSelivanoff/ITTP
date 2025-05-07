@@ -1,0 +1,74 @@
+---
+- name: Configure Nginx web server
+  hosts: webservers
+  become: yes
+  vars_files:
+    - vars/main.yml
+
+  tasks:
+    - name: Update apt package index
+      apt:
+        update_cache: yes
+
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: present
+
+    - name: Create web root directory
+      file:
+        path: "{{ nginx_root_dir }}"
+        state: directory
+        mode: '0755'
+        owner: www-data
+        group: www-data
+
+    - name: Create default index.html
+      copy:
+        dest: "{{ nginx_root_dir }}/index.html"
+        content: |
+          <html>
+          <head><title>Welcome to {{ ansible_hostname }}!</title></head>
+          <body>
+          <h1>Hello from {{ ansible_hostname }}!</h1>
+          <p>Nginx is working!</p>
+          </body>
+          </html>
+        mode: '0644'
+        owner: www-data
+        group: www-data
+
+    - name: Configure Nginx main config
+      template:
+        src: templates/nginx.conf.j2
+        dest: /etc/nginx/nginx.conf
+        mode: '0644'
+      notify: restart nginx
+
+    - name: Configure default site
+      template:
+        src: templates/default.conf.j2
+        dest: /etc/nginx/sites-available/default
+        mode: '0644'
+      notify: restart nginx
+
+    - name: Ensure Nginx is running and enabled
+      service:
+        name: nginx
+        state: started
+        enabled: yes
+
+    - name: Check Nginx availability
+      uri:
+        url: "http://{{ ansible_host }}:{{ nginx_port }}"
+        return_content: yes
+      register: nginx_check
+      until: nginx_check.status == 200
+      retries: 5
+      delay: 5
+
+  handlers:
+    - name: restart nginx
+      service:
+        name: nginx
+        state: restarted

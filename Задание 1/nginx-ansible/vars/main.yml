@@ -1,0 +1,10 @@
+---
+nginx_port: 80
+nginx_worker_processes: auto
+nginx_worker_connections: 1024
+nginx_server_names_hash_bucket_size: 64
+nginx_keepalive_timeout: 65
+nginx_default_type: "application/octet-stream"
+nginx_access_log: "/var/log/nginx/access.log"
+nginx_error_log: "/var/log/nginx/error.log"
+nginx_root_dir: "/var/www/html"
